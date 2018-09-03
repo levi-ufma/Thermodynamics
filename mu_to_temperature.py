@@ -69,5 +69,4 @@ class Mu_to_temperature:
             f'\n* Oxygen chemical potential: {mu:1.3f} eV * \nTemperature: {(self.temperature(mu)-273):3.2f} °C = {self.temperature(mu):3.2f} K')
 
 
-result = Mu_to_temperature()
-result.print_T_corresponding_to_mu_equals(-4.93552791875)
+

@@ -65,8 +65,6 @@ class Mu_to_temperature:
         return T
 
     def print_T_corresponding_to_mu_equals(self, mu):
-        print(
-            f'\n* Oxygen chemical potential: {mu:1.3f} eV * \nTemperature: {(self.temperature(mu)-273):3.2f} °C = {self.temperature(mu):3.2f} K')
         return {
             'potential': f'{mu:1.3f} eV',
             'celsius': f'{(self.temperature(mu)-273):3.2f} °C',

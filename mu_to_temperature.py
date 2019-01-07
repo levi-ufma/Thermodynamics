@@ -1,72 +1,116 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 18 13:27:20 2018
+@author: jherfson
+
+Updated on Mon Nov 26 21:30:00 2018
+@author: Rodolpho
+"""
+
 import math
 
 """
-1 - Calcula a entropia pra 298 K. A partir dela, calcula a estimativa da temperatura correspondente ao potencial químico fornecido pelo usuário. Digo estimativa, porque pra ser exato teríamos que usar a entropia correspondente à temperatura correta. Mas não sabemos a temperatura ainda. Estamos chutando 298 K, que provavelmente estará incorreta.
-2 - Calcular a entropia a essa nova temperatura obtida. Essa temperatura já vai ser um palpite melhor que o palpite anterior.
-3 - Com essa nova entropia e o mesmo potencial químico que o usuário forneceu no começo, calcular a nova estimativa de  temperatura correspondente ao potencial químico fornecido pelo usuário.
-4 - Repetir passos 2 e 3 até a temperatura convergir.
+This class calculates entropies and enthalpies of oxygen gas, based on fits of experimental data, 
+and then uses them to estimate iteratively the temperature corresponding to a given oxygen chemical 
+potential at partial pressure of 0.21 atm. 
 """
 
-
-class Mu_to_temperature:
+class mu_to_temperature:
     def __init__(self, *args, **kwargs):
-        self.coeff_100_700 = (31.322, -20.235, 57.866, -
-                              36.506, -0.007, 246.794)
-        self.coeff_700_2000 = (30.032, 8.773, -3.988, 0.788, -0.742, 236.166)
-        self.coeff_2000_6000 = (20.911, 10.721, -2.020, 0.146, 9.246, 237.619)
-        self.JmolK_to_eV = 0.00001036427230133
-        self.atm_to_MPa = 101325.0e-6
-        self.k_B = float(8.6173303e-5)
-        self.mu_0k = -4.93552791875
-        #self.t_over_1000 = T / 1000
+        # Shomate equation coefficients A, B, C, D, E, F, G for 0.1 MPa, fitted from standard experimental data.  
+        # Source: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7782447&Mask=1
+        self.c1 = (31.32234,-20.23531,57.86644,-36.50624,-0.007374,-8.903471,246.7945) # Range: 100 K - 700 K
+        self.c2 = (30.03235,8.772972,-3.988133,0.788313,-0.741599,-11.32468,236.1663)  # Range: 700 K - 2000 K
+        self.c3 = (20.91111,10.72071,-2.020498,0.146449,9.245722,5.337651,237.6185)    # Range: 2000 K - 6000 K
+        # Conversion factors
+        self.kJmol_to_eV = 0.01036427230133138
+        self.JmolK_to_eVK = 0.00001036427230133138
+        self.atm_to_MPa = float(101325.0e-6)
+        # Boltzmann's constantin eV
+        self.kB = float(8.6173303e-5)
+        # Energy per atom at 0 K in eV for oxygen, taken from the Materials Project website (ID: mp-12957). Calculated via DFT
+        self.Ho_eV = -4.93552791875*2.0
+        # Difference between the enthalpy at 298.15 K and the one at 0 K, in kJ/mol
+        # Source: Malcolm W. Chase Jr., NIST-JANAF Themochemical Tables, Fourth Edition, J. Phys. Chem. Ref. Data, Monograph 9, 1998, pp. 1744
+        self.HrefMinusHo_eV = float(8.683)*self.kJmol_to_eV
+        # Enthalpy of oxygen gas at 298.15 K in eV, assuming the Materials Project value for the enthalpy at 0 K.
+        self.Href = self.HrefMinusHo_eV + self.Ho_eV
+        # Pressure in atm. Change it to the desired value.
+        self.pressure = 0.21
 
-    # This function returns the entropy of oxygen gas in eV
-    def O2_entropy_in_eV_K(self, T):
-        if T < 100:
-            T = 100
-        T_over_1000 = T / 1000
-
-        # Use the appropriate coefficients for the desired temperature range. The coefficients and analytical expression for entropy were taken
-        # from the Materials Project, based on experimental data
-
-        if T >= 100 and T <= 700:
-            entropy_JmolK = self.coeff_100_700[0] * math.log(T_over_1000) + self.coeff_100_700[1] * T_over_1000 + (self.coeff_100_700[2] * T_over_1000**2)/2.0 + (
-                self.coeff_100_700[3] * T_over_1000**3)/3.0 - self.coeff_100_700[4]/(2.0 * T_over_1000**2) + self.coeff_100_700[5]
-            entropy_eVK = entropy_JmolK * self.JmolK_to_eV
-        elif T > 700 and T <= 2000:
-            entropy_JmolK = self.coeff_100_700[0] * math.log(T_over_1000) + self.coeff_100_700[1] * T_over_1000 + (self.coeff_100_700[2] * T_over_1000**2)/2.0 + (
-                self.coeff_100_700[3] * T_over_1000**3)/3.0 - self.coeff_100_700[4]/(2.0 * T_over_1000**2) + self.coeff_100_700[5]
-            entropy_eVK = entropy_JmolK * self.JmolK_to_eV
-        elif T > 2000 and T <= 6000:
-            entropy_JmolK = self.coeff_100_700[0] * math.log(T_over_1000) + self.coeff_100_700[1] * T_over_1000 + (self.coeff_100_700[2] * T_over_1000**2)/2.0 + (
-                self.coeff_100_700[3] * T_over_1000**3)/3.0 - self.coeff_100_700[4]/(2.0 * T_over_1000**2) + self.coeff_100_700[5]
-            entropy_eVK = entropy_JmolK * self.JmolK_to_eV
-
-        return entropy_eVK
+    # This function returns the entropy of oxygen gas at 0.1 MPa and given temperature in eV
+    def Entropy(self, temperature):
+        
+        if temperature < 100.0:
+            temperature = 100.0
+        if temperature > 6000.0:
+            temperature = 6000.0
+       
+        # Use the appropriate Shomate equation coefficients for the given temperature 
+        if temperature >= 100 and temperature <= 700:
+            A = self.c1[0]; B = self.c1[1]; C = self.c1[2]; D = self.c1[3]; E = self.c1[4]; G = self.c1[6]
+        elif temperature > 700 and temperature <= 2000:
+            A = self.c2[0]; B = self.c2[1]; C = self.c2[2]; D = self.c2[3]; E = self.c2[4]; G = self.c2[6]
+        elif temperature > 2000 and temperature <= 6000:
+            A = self.c3[0]; B = self.c3[1]; C = self.c3[2]; D = self.c3[3]; E = self.c3[4]; G = self.c3[6]
+        
+        t = temperature/1000.0    
+        S_JmolK = A*math.log(t) + B*t + C*t**2/2.0 + D*t**3/3.0 - E/2.0/t**2 + G
+        S_eVK = S_JmolK*self.JmolK_to_eVK    
+        return S_eVK
+    
+    # This function returns the enthalpy of oxygen gas at given temperature minus the one at 298.15 K, in eV
+    def EnthalpyMinusRef(self, temperature):
+        
+        if temperature < 100.0:
+            temperature = 100.0
+        if temperature > 6000.0:
+            temperature = 6000.0
+       
+        # Use the appropriate Shomate equation coefficients for the given temperature 
+        if temperature >= 100 and temperature <= 700:
+            A = self.c1[0]; B = self.c1[1]; C = self.c1[2]; D = self.c1[3]; E = self.c1[4]; F = self.c1[5]
+        elif temperature > 700 and temperature <= 2000:
+            A = self.c2[0]; B = self.c2[1]; C = self.c2[2]; D = self.c2[3]; E = self.c2[4]; F = self.c2[5]
+        elif temperature > 2000 and temperature <= 6000:
+            A = self.c3[0]; B = self.c3[1]; C = self.c3[2]; D = self.c3[3]; E = self.c3[4]; F = self.c3[5]
+        
+        t = temperature/1000.0    
+        HMinusHref_kJmolK = A*t + B*t**2/2.0 + C*t**3/3.0 + D*t**4/4.0 - E/t + F
+        HMinusHref_eV = HMinusHref_kJmolK*self.kJmol_to_eV    
+        return HMinusHref_eV
 
     # This function calculates iteratively the temperature corresponding to a given oxygen chemical potential
-    def temperature(self, mu):
+    def temp(self, mu):
         # We need an initial guess for temperature... Why not RT? =)
-        T = 298.0
+        temperature = 298.0
         # Just a dummy variable for the iterations
-        T_old = 0
+        temperature_old = 0.0
 
         # Do this until the temperature converges within 0.001 K
-        while abs(T-T_old) > 1e-3:
-            # The next three lines can be uncommented for debugging purposes. If you do this, also uncomment the line right above this loop
-            T_old = T
+        while abs(temperature-temperature_old) > 1.0e-3:
+            
+            temperature_old = temperature
+            # The following expression was obtained by solving the equation below for T, with p = 0.21 atm and p0 = 0.1 MPa 
+            # u(T,p)=[h(T)-h(Tref)]+h(Tref)-T*s(T,p0)+kB*T*ln(p/p0)
+            temperature = ( 2*mu - self.EnthalpyMinusRef(temperature_old) - self.Href ) / ( self.kB*math.log(self.pressure*self.atm_to_MPa/0.1) - self.Entropy(temperature_old) )
+            
+            # No negative temperatures!
+            if temperature < 0.0:
+                temperature = 0.0
 
-            T = (mu - self.mu_0k)/(self.k_B - self.O2_entropy_in_eV_K(T) +
-                                   self.k_B * math.log(0.21 * self.atm_to_MPa/0.1))
+        return temperature
 
-            if T < 0:
-                T = 0
-
-        return T
-
-    def print_T_corresponding_to_mu_equals(self, mu):
+    def print_temperature_corresponding_to_mu_equals(self, mu):
         return {
-            'potential': f'{mu:1.3f} eV',
-            'celsius': f'{(self.temperature(mu)-273):3.2f} °C',
-            'kelvin': f'{self.temperature(mu):3.2f} K',
+            'ChemPot_eV': round(mu,3), 
+            'T_Celsius': round(self.temp(mu)-273.0,2),
+            'T_Kelvin': round(self.temp(mu),2)
         }
+
+impr = mu_to_temperature()
+text=impr.print_temperature_corresponding_to_mu_equals(-6.468)
+#print(text)
+#text=impr.print_temperature_corresponding_to_mu_equals(-4.93552791875-0.8675)
+#print(text)

@@ -16,7 +16,7 @@ with open(path.join(here, 'readme.md'), encoding='utf-8') as readme:
 
 setup(
     name='Mu-to-temperature',
-    version='0.1.0',
+    version='0.1.2',
     description='calculates a temperature estimate corresponding to the chemical potential supplied by the user',
     long_description=long_description,
     long_description_content_type='text/markdown',

@@ -58,6 +58,9 @@ class Thermodynamics:
         t = temperature/1000.0    
         S_JmolK = A*math.log(t) + B*t + C*t**2/2.0 + D*t**3/3.0 - E/2.0/t**2 + G
         S_eVK = S_JmolK*self.JmolK_to_eVK    
+        
+        #print(S_eVK/self.kJmol_to_eV)
+        
         return S_eVK
     
     # This function returns the enthalpy of oxygen gas at given temperature minus the one at 298.15 K, in eV
@@ -78,7 +81,9 @@ class Thermodynamics:
         
         t = temperature/1000.0    
         HMinusHref_kJmolK = A*t + B*t**2/2.0 + C*t**3/3.0 + D*t**4/4.0 - E/t + F
-        HMinusHref_eV = HMinusHref_kJmolK*self.kJmol_to_eV    
+        HMinusHref_eV = HMinusHref_kJmolK*self.kJmol_to_eV
+
+        #print(HMinusHref_eV/self.kJmol_to_eV)    
         return HMinusHref_eV
 
     # This function calculates iteratively the temperature corresponding to a given oxygen chemical potential
@@ -94,8 +99,7 @@ class Thermodynamics:
             temperature_old = temperature
             # The following expression was obtained by solving the equation below for T, with p = 0.21 atm and p0 = 0.1 MPa 
             # u(T,p)=[h(T)-h(Tref)]+h(Tref)-T*s(T,p0)+kB*T*ln(p/p0)
-            temperature = (2*mu - self.enthalpy_minusRef(temperature_old) - self.Href)/(self.kB*math.log(self.pressure*self.atm_to_MPa/0.1) 
-            - self.entropy(temperature_old))
+            temperature = (2*mu - self.enthalpy_minusRef(temperature_old) - self.Href)/(self.kB*math.log(self.pressure*self.atm_to_MPa/0.1) - self.entropy(temperature_old))
             
             # No negative temperatures!
             if temperature < 0.0:
@@ -105,12 +109,13 @@ class Thermodynamics:
 
 
     def temperature_to_mu(self, temperature):
+
         oxygen_enthalpy = self.Ho_eV + self.HrefMinusHo_eV + self.enthalpy_minusRef(temperature)
        
-        mu = oxygen_enthalpy - temperature*self.entropy(temperature) 
-        + temperature*self.kB*math.log(self.pressure*self.atm_to_MPa/0.1)                       
+        mu = oxygen_enthalpy - temperature*self.entropy(temperature) + temperature*self.kB*math.log(self.pressure*self.atm_to_MPa/0.1)                       
         
         return mu
+        
 
             
     def print_temperature_corresponding_to_mu_equals(self, mu):
@@ -125,13 +130,13 @@ class Thermodynamics:
 
     def print_mu_corresponding_to_temperature_equals(self, temperature):
         return {
-            'Temperature': round(temperature, 3),
-            'ChemPot_eVs': round(self.temperature_to_mu(temperature), 2)
+            'ChemPot_eV': round(self.temperature_to_mu(temperature), 3),
+            'T_Celsius': round(temperature-273.0, 2),
+             'T_Kelvin': round(temperature, 3)
         }
 
 
 if __name__ == "__main__":
     mu = Thermodynamics()
-    print(mu.print_mu_corresponding_to_temperature_equals(15.59243335))
-
-    print(mu.print_temperature_corresponding_to_mu_equals(-4.93552791875))
+    print('temperature_to_mu: ', mu.print_mu_corresponding_to_temperature_equals(1623))
+    print('mu_to_temperature: ', mu.print_temperature_corresponding_to_mu_equals(-6.96))

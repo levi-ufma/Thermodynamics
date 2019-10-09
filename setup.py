@@ -31,9 +31,5 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     packages=find_packages(exclude=['texts']),
-    install_requires=[
-        'matplotlib',
-        'numpy',
-        'pymatgen',
-    ]
+
 )

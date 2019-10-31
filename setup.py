@@ -1,5 +1,5 @@
 """
-    Mu to temperature python package
+    Thermedynamics python package
 
     See:
         https://github.com/Levi-UFMA
@@ -20,7 +20,7 @@ setup(
     description='calculates a temperature estimate corresponding to the chemical potential supplied by the user',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Levi-UFMA/utils',
+    url='https://github.com/Levi-UFMA/Thermodynamics',
     author='LEVI',
     author_email='levi@email.com',
     classifiers=[
@@ -29,6 +29,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     packages=find_packages(exclude=['texts']),
 

@@ -1,13 +1,3 @@
-# !/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 18 13:27:20 2018
-@author: jherfson
-
-Updated on Mon Nov 26 21:30:00 2018
-@author: Rodolpho
-"""
-
 import math
 
 """

@@ -15,7 +15,7 @@ with open(path.join(here, 'readme.md'), encoding='utf-8') as readme:
     long_description = readme.read()
 
 setup(
-    name='Mu-to-temperature',
+    name='Thermodynamics',
     version='0.1.2',
     description='calculates a temperature estimate corresponding to the chemical potential supplied by the user',
     long_description=long_description,
